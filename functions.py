@@ -2,6 +2,13 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 import json
+import yaml
+
+# Import parameters 
+with open('parameters.yaml') as file:
+    parameters = yaml.full_load(file)
+lccs = parameters['connected_components']
+k_cores = parameters['k_cores']
 
 def getScreenName(x):
     try:
