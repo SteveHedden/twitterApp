@@ -18,7 +18,7 @@ data = DataStore()
 @application.route("/", methods=["GET", "POST"])
 def index():
     #Read in data
-    df = pd.read_json("1919-tweets.json")
+    df = pd.read_json("raw_tweets.json")
     #df = pd.read_json("protest2020_tweets.json")
 
 
@@ -82,7 +82,8 @@ def index():
     # Inputs are nodes data to filter on, name of file to save it as,
     # number of maximum nodes to take from each community, minimum centrality score
     # and minimum numbe of connections
-    nodes, net = fn.createTopNodesforVisual(bc1, "test", 10000, 0.0001, 1, edges)
+    #nodes, net = fn.createTopNodesforVisual(bc1, "test", 10000, 0.0001, 1, edges)
+    nodes, net = fn.filter_graph_for_viz(bc1, edges)
 
     # Make it exactly right for the d3 visual
     nodes = fn.buildNodesFromLinks(net, bc1)
