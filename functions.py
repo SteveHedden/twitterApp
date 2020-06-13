@@ -25,6 +25,31 @@ def getMentions(x):
         return temp;
     except:
         return np.NaN;
+    
+def filter_graph_for_viz(df, edges):
+    top = df.groupby('value')['names'].filter(lambda x: len(x) > 0)
+    df = df.loc[df['names'].isin(top)]
+    degreeNetwork = build_network_from_data(edges, df)
+    nodes = buildNodesFromLinks(degreeNetwork, df)
+    return (nodes, degreeNetwork)
+
+def build_network_from_data(network, df):
+    df = network.loc[(network['source'].isin(df['names'])) & (network['target'].isin(df['names']))]
+    network = nx.from_pandas_edgelist(df, 'source', 'target')
+    network = filter_for_largest_components(network, lccs) # second argument is number of connected componenets
+    G_clean = filter_for_k_core(network, k_cores)
+    edgelist = nx.to_pandas_edgelist(network)
+    df_edgelist = pd.DataFrame(edgelist[['source', 'target']])
+    return df_edgelist
+
+def filter_for_largest_components(network, num_comp):
+    network = nx.compose_all(sorted(nx.connected_component_subgraphs(network), key = len, reverse=True)[:num_comp])
+    return network
+
+def filter_for_k_core(network, k_cores):
+    network.remove_edges_from(network.selfloop_edges())
+    #network = nx.k_core(network, k_cores)
+    network = nx.connected_component_subgraphs(nx.k_core(network, k=k_cores))
 
 def createTopNodesforVisual(df, nameOfFile, head, threshold, minDegree, edges):
     # Only use groups with more than X members
