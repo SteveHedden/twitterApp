@@ -4,6 +4,8 @@ import pandas as pd
 import json
 import yaml
 
+#import listener
+
 # Import parameters 
 with open('parameters.yaml') as file:
     parameters = yaml.full_load(file)

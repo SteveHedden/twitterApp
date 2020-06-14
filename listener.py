@@ -65,4 +65,4 @@ class listener(StreamListener):
 #Track and filter
 twitterStream=Stream(auth, listener())
 track=tracker
-twitterStream.filter(track=track, is_async=False)  # track can also take a location argument
+twitterStream.filter(track=track, is_async=True)  # track can also take a location argument
