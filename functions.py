@@ -54,6 +54,18 @@ def getText1(x, df):
     else:
         return;
 
+def getTweetID(x, df):
+    length1 = len(df.loc[df["source"] == x]["id"])
+    length2 = len(df.loc[df["target"] == x]["id"])
+    if length1 > 0:
+        text = df.loc[df["source"] == x]["id"].values[0]
+        return text;
+    elif length2 > 0:
+        text = df.loc[df["target"] == x]["id"].values[0]
+        return text;
+    else:
+        return;
+
 '''def build_graph_from_data(G, df):
     df = G.loc[(G['source'].isin(df['names'])) & (G['target'].isin(df['names']))]
     G = nx.from_pandas_edgelist(df, 'source', 'target')

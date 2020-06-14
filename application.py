@@ -6,8 +6,8 @@ import networkx as nx
 import community
 import functions as fn
 import yaml
-
-# Import parameters 
+#import listener
+#import parameters
 with open('parameters.yaml') as file:
     parameters = yaml.full_load(file)
 lccs = parameters['connected_components']
@@ -88,10 +88,17 @@ def index():
 
     # Get tweet text and assign to node
     nodes['tweet_text'] = nodes['node'].apply(lambda x: fn.getText1(x, df))
+
+    # Get tweet id and assign to node
+    nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
+    nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
+    nodes['tweet_id'] = nodes['tweet_id'].astype(int)
+    nodes['tweet_id'] = nodes['tweet_id'].astype(str)
+
     
     # Rename and reorder to play nice with main.js (necessisary?)
-    nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text']
-    nodes = nodes[['betweenness','degree','eigenvector','group','id','name','tweet_text']]
+    nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text', 'tweet_id']
+    nodes = nodes[['betweenness','degree','eigenvector','group','id','name','tweet_text', 'tweet_id']]
     
     # Update edgelists to use ids (necessisary?)
     edges['source'] = edges['source'].apply(lambda x: nodes.loc[nodes['name'] == x]['id'].values[0])
@@ -102,6 +109,8 @@ def index():
     edge_dict = edges.to_dict(orient='records')
     graph_dict = {'nodes': node_dict, 'links': edge_dict} # Because they are called links in main.js
 
+    with open("test.json", 'w', encoding='utf-8') as f:
+        json.dump(graph_dict, f, ensure_ascii=False,indent=4)
     # Write to JSON (necssisary?)
     j1 = json.dumps(node_dict, indent=2)
     j2 = json.dumps(edge_dict, indent=2)

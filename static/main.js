@@ -18,45 +18,44 @@ var container = svg.append('g');
 var search = d3.select("body").append('form').attr('onsubmit', 'return false;');
 
 var box = search.append('input')
-	.attr('type', 'text')
-	.attr('id', 'searchTerm')
-	.attr('placeholder', 'Type to search...');
+  .attr('type', 'text')
+  .attr('id', 'searchTerm')
+  .attr('placeholder', 'Type to search...');
 
 var button = search.append('input')
-	.attr('type', 'button')
-	.attr('value', 'Search')
-	.on('click', function () { searchNodes(); });
+  .attr('type', 'button')
+  .attr('value', 'Search')
+  .on('click', function () { searchNodes(); });
 
 // Toggle for ego networks on click (below).
 var toggle = 0;
 
 
 var tooltip = d3.select("body")
-	.append("div")
-	.attr("class", "tooltip")
-	.style("opacity", 0);
+  .append("div")
+  .attr("class", "tooltip")
+  .style("opacity", 0);
 
-//var graphData = {{data | safe}}
 
 d3.json("/get-data", function(error, graph) {
   if (error) throw error;
-  console.log(graph);
+
   // Make object of all neighboring nodes.
   var linkedByIndex = {};
   graph.links.forEach(function(d) {
-	  linkedByIndex[d.source + ',' + d.target] = 1;
-	  linkedByIndex[d.target + ',' + d.source] = 1;
+    linkedByIndex[d.source + ',' + d.target] = 1;
+    linkedByIndex[d.target + ',' + d.source] = 1;
   });
 
   // A function to test if two nodes are neighboring.
   function neighboring(a, b) {
-	  return linkedByIndex[a.index + ',' + b.index];
+    return linkedByIndex[a.index + ',' + b.index];
   }
 
   // Linear scale for degree centrality.
   var degreeSize = d3.scaleLinear()
-  	.domain([d3.min(graph.nodes, function(d) {return d.degree; }),d3.max(graph.nodes, function(d) {return d.degree; })])
-  	.range([8,25]);
+    .domain([d3.min(graph.nodes, function(d) {return d.degree; }),d3.max(graph.nodes, function(d) {return d.degree; })])
+    .range([8,25]);
 
   // Collision detection based on degree centrality.
   simulation.force("collide", d3.forceCollide().radius( function (d) { return degreeSize(d.degree); }));
@@ -94,8 +93,6 @@ d3.json("/get-data", function(error, graph) {
         .duration(100)
     	.attr('r', function(d) { return degreeSize(d.degree); })
     })
-
-
 	.on('mouseover.tooltip', function(d) {
 	  	tooltip.transition()
 	    	.duration(300)
@@ -111,10 +108,18 @@ d3.json("/get-data", function(error, graph) {
 	        .duration(100)
 	        .style("opacity", 0);
 	    })
-
       // On click, toggle ego networks for the selected node.
       .on('click', function(d, i) {
-	      if (toggle == 0) {
+        $("#container").empty();
+        number = String(d.tweet_id)
+        console.log(number);
+        twttr.widgets.createTweet(number,
+          document.getElementById('container'),
+          {
+            theme: 'dark'
+          }
+        );
+       	      if (toggle == 0) {
 		      // Ternary operator restyles links and nodes if they are adjacent.
 		      d3.selectAll('.link').style('stroke-opacity', function (l) {
 			      return l.target == d || l.source == d ? 1 : 0.1;
@@ -163,17 +168,17 @@ d3.json("/get-data", function(error, graph) {
         .attr("cy", function(d) { return d.y; });
   }
 
-	function mouseover() {
-	  d3.select(this).select("circle").transition()
-	      .duration(750)
-	      .attr("r", 16);
-	}
+  function mouseover() {
+    d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 16);
+  }
 
-	function mouseout() {
-	  d3.select(this).select("circle").transition()
-	      .duration(750)
-	      .attr("r", 8);
-	}
+  function mouseout() {
+    d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 8);
+  }
 
 
     // A slider (using only d3 and HTML5) that removes nodes below the input threshold.
@@ -234,36 +239,36 @@ d3.json("/get-data", function(error, graph) {
               toggle = 0;
             }
           })
-		.on('mouseover', function(d, i) {
-		  d3.select(this)
-		    .transition()
-		    .duration(100)
-	    	.attr('r', function(d) { return degreeSize(d.degree)*2; });
-			//.text(function(d) { return d.name; });
-		})
-		 .on('mouseout', function(d, i) {
-	      d3.select(this)
-	        .transition()
-	        .duration(100)
-	    	.attr('r', function(d) { return degreeSize(d.degree); })
-	    })
+    .on('mouseover', function(d, i) {
+      d3.select(this)
+        .transition()
+        .duration(100)
+        .attr('r', function(d) { return degreeSize(d.degree)*2; });
+      //.text(function(d) { return d.name; });
+    })
+     .on('mouseout', function(d, i) {
+        d3.select(this)
+          .transition()
+          .duration(100)
+        .attr('r', function(d) { return degreeSize(d.degree); })
+      })
 
 
-		.on('mouseover.tooltip', function(d) {
-		  	tooltip.transition()
-		    	.duration(300)
-		    	.style("opacity", .8);
-		  	tooltip.html("<b>" + "Name: " + "</b>" + d.name + "<p/>group:" + d.tweet_text)
-		  		.style('font-size', '16px')
-		  		.style('font-family', 'Helvetica')
-		    	.style("left", (d3.event.pageX) + "px")
-		    	.style("top", (d3.event.pageY + 10) + "px");
-			})
-	    .on("mouseout.tooltip", function() {
-	        tooltip.transition()
-		        .duration(100)
-		        .style("opacity", 0);
-		    })
+    .on('mouseover.tooltip', function(d) {
+        tooltip.transition()
+          .duration(300)
+          .style("opacity", .8);
+        tooltip.html("<b>" + "Name: " + "</b>" + d.name + "<p/>group:" + d.tweet_text)
+          .style('font-size', '16px')
+          .style('font-family', 'Helvetica')
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY + 10) + "px");
+      })
+      .on("mouseout.tooltip", function() {
+          tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
+        })
       node = nodeEnter.merge(node)
 
 
@@ -290,29 +295,29 @@ d3.json("/get-data", function(error, graph) {
 
     });
 
-	// A dropdown menu with three different centrality measures, calculated in NetworkX.
-	// Accounts for node collision.
-	var dropdown = d3.select('body').append('div')
-		.append('select')
-		.on('change', function() {
-			var centrality = this.value;
-			//console.log(centrality); "degree"
-			var centralitySize = d3.scaleLinear()
-				.domain([d3.min(graph.nodes, function(d) { return d[centrality]; }), d3.max(graph.nodes, function(d) { return d[centrality]; })])
-				.range([8,25]);
-			node.attr('r', function(d) { return degreeSize(d[centrality]); } );
-			//node.attr('r', function(d) { return d[centrality] * 1000; } );
-			//console.log(d[centrality]);
-			// Recalculate collision detection based on selected centrality.
-			simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
-			simulation.alphaTarget(0.1).restart();
-		});
+  // A dropdown menu with three different centrality measures, calculated in NetworkX.
+  // Accounts for node collision.
+  var dropdown = d3.select('body').append('div')
+    .append('select')
+    .on('change', function() {
+      var centrality = this.value;
+      //console.log(centrality); "degree"
+      var centralitySize = d3.scaleLinear()
+        .domain([d3.min(graph.nodes, function(d) { return d[centrality]; }), d3.max(graph.nodes, function(d) { return d[centrality]; })])
+        .range([8,25]);
+      node.attr('r', function(d) { return degreeSize(d[centrality]); } );
+      //node.attr('r', function(d) { return d[centrality] * 1000; } );
+      //console.log(d[centrality]);
+      // Recalculate collision detection based on selected centrality.
+      simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
+      simulation.alphaTarget(0.1).restart();
+    });
 
-	dropdown.selectAll('option')
-		.data(['Degree Centrality', 'Betweenness Centrality', 'Eigenvector Centrality'])
-		.enter().append('option')
-		.attr('value', function(d) { return d.split(' ')[0].toLowerCase(); })
-		.text(function(d) { return d; });
+  dropdown.selectAll('option')
+    .data(['Degree Centrality', 'Betweenness Centrality', 'Eigenvector Centrality'])
+    .enter().append('option')
+    .attr('value', function(d) { return d.split(' ')[0].toLowerCase(); })
+    .text(function(d) { return d; });
 
 });
 
@@ -335,20 +340,20 @@ function dragended(d) {
 
 // Zooming function translates the size of the svg container.
 function zoomed() {
-	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+    container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
 }
 
 // Search for nodes by making all unmatched nodes temporarily transparent.
 function searchNodes() {
-	var term = document.getElementById('searchTerm').value;
-	var selected = container.selectAll('.node').filter(function (d, i) {
-		return d.name.toLowerCase().search(term.toLowerCase()) == -1;
-	});
-	selected.style('opacity', '0');
-	var link = container.selectAll('.link');
-	link.style('stroke-opacity', '0');
-	d3.selectAll('.node').transition()
-		.duration(5000)
-		.style('opacity', '1');
-	d3.selectAll('.link').transition().duration(5000).style('stroke-opacity', '0.6');
+  var term = document.getElementById('searchTerm').value;
+  var selected = container.selectAll('.node').filter(function (d, i) {
+    return d.name.toLowerCase().search(term.toLowerCase()) == -1;
+  });
+  selected.style('opacity', '0');
+  var link = container.selectAll('.link');
+  link.style('stroke-opacity', '0');
+  d3.selectAll('.node').transition()
+    .duration(5000)
+    .style('opacity', '1');
+  d3.selectAll('.link').transition().duration(5000).style('stroke-opacity', '0.6');
 }
