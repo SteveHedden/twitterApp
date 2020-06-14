@@ -2,15 +2,6 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 import json
-import yaml
-
-#import listener
-
-# Import parameters 
-with open('parameters.yaml') as file:
-    parameters = yaml.full_load(file)
-lccs = parameters['connected_components']
-k_cores = parameters['k_cores']
 
 def getScreenName(x):
     try:
@@ -19,14 +10,12 @@ def getScreenName(x):
     except:
         return;
 
-
 def getOrigScreenName(x):
     try:
         temp = x["user"]["screen_name"]
         return temp;
     except:
         return;
-
 
 def getMentions(x):
     try:
@@ -38,27 +27,41 @@ def getMentions(x):
 def filter_graph_for_viz(df, edges):
     top = df.groupby('value')['names'].filter(lambda x: len(x) > 0)
     df = df.loc[df['names'].isin(top)]
-    degreeNetwork = build_network_from_data(edges, df)
+    degreeNetwork = build_graph_from_data(edges, df)
     nodes = buildNodesFromLinks(degreeNetwork, df)
     return (nodes, degreeNetwork)
 
-def build_network_from_data(network, df):
-    df = network.loc[(network['source'].isin(df['names'])) & (network['target'].isin(df['names']))]
-    network = nx.from_pandas_edgelist(df, 'source', 'target')
-    network = filter_for_largest_components(network, lccs) # second argument is number of connected componenets
-    G_clean = filter_for_k_core(network, k_cores)
-    edgelist = nx.to_pandas_edgelist(network)
+def filter_for_largest_components(G, num_comp):
+    G = nx.compose_all(sorted(nx.connected_component_subgraphs(G), key = len, reverse=True)[:num_comp])
+    return G
+
+def filter_for_k_core(G, k_cores):
+    G.remove_edges_from(G.selfloop_edges())
+    G_tmp = nx.k_core(G, k_cores)
+    if len(G_tmp) <= 3:
+        G_tmp = nx.k_core(G)
+    return G_tmp
+
+def getText1(x, df):
+    length1 = len(df.loc[df["source"] == x]["text"])
+    length2 = len(df.loc[df["target"] == x]["text"])
+    if length1 > 0:
+        text = df.loc[df["source"] == x]["text"].values[0]
+        return text;
+    elif length2 > 0:
+        text = df.loc[df["target"] == x]["text"].values[0]
+        return text;
+    else:
+        return;
+
+'''def build_graph_from_data(G, df):
+    df = G.loc[(G['source'].isin(df['names'])) & (G['target'].isin(df['names']))]
+    G = nx.from_pandas_edgelist(df, 'source', 'target')
+    G = filter_for_largest_components(G, lccs) # second argument is number of connected componenets
+    G = filter_for_k_core(G, k_cores)
+    edgelist = nx.to_pandas_edgelist(G)
     df_edgelist = pd.DataFrame(edgelist[['source', 'target']])
     return df_edgelist
-
-def filter_for_largest_components(network, num_comp):
-    network = nx.compose_all(sorted(nx.connected_component_subgraphs(network), key = len, reverse=True)[:num_comp])
-    return network
-
-def filter_for_k_core(network, k_cores):
-    network.remove_edges_from(network.selfloop_edges())
-    #network = nx.k_core(network, k_cores)
-    network = nx.connected_component_subgraphs(nx.k_core(network, k=k_cores))
 
 def createTopNodesforVisual(df, nameOfFile, head, threshold, minDegree, edges):
     # Only use groups with more than X members
@@ -112,16 +115,5 @@ def exportData(nodes, network, fileName):
     j2 = json.dumps(d2)
     d1 = {"nodes": d1, "links": d2}
     with open(fileName + ".json", 'w', encoding='utf-8') as f:
-        json.dump(d1, f, ensure_ascii=False, indent=4)
+        json.dump(d1, f, ensure_ascii=False, indent=4)'''
 
-def getText1(x, df):
-    length1 = len(df.loc[df["source"] == x]["text"])
-    length2 = len(df.loc[df["target"] == x]["text"])
-    if length1 > 0:
-        text = df.loc[df["source"] == x]["text"].values[0]
-        return text;
-    elif length2 > 0:
-        text = df.loc[df["target"] == x]["text"].values[0]
-        return text;
-    else:
-        return;
