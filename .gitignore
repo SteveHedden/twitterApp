@@ -46,3 +46,8 @@ Temporary Items
 # End of https://www.toptal.com/developers/gitignore/api/macos,jupyternotebooks
 parameters.yaml
 raw_tweets.json
+archived/Untitled.ipynb
+archived/raw_tweets_maga.json
+archived/raw_tweets_ExposeBillGates.json
+archived/functions.py
+archived/application.py
