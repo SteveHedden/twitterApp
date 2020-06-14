@@ -1,11 +1,18 @@
 import json
-
 from flask import Flask, render_template, jsonify
 import pandas as pd
 import numpy as np
 import networkx as nx
 import community
 import functions as fn
+import yaml
+
+# Import parameters 
+with open('parameters.yaml') as file:
+    parameters = yaml.full_load(file)
+lccs = parameters['connected_components']
+k_cores = parameters['k_cores']
+
 
 application = Flask(__name__)
 
@@ -18,103 +25,89 @@ data = DataStore()
 @application.route("/", methods=["GET", "POST"])
 def index():
     #Read in data
-    df = pd.read_json("raw_tweets.json")
-    #df = pd.read_json("protest2020_tweets.json")
-
+    df = pd.read_json('raw_tweets.json')
 
     # Create a source column in the df for the sn of the tweeter
-    df['source'] = df["user"].apply(lambda x: fn.getScreenName(x))
+    df['source'] = df['user'].apply(lambda x: fn.getScreenName(x))
     df['target'] = df['retweeted_status'].apply(lambda x: fn.getOrigScreenName(x))
 
-    edges1 = pd.DataFrame()  # Create empty df
-
     # Break into retweets and non-reweets
-    rts = df.loc[~pd.isnull(df["retweeted_status"])]
-    nonrts = df.loc[pd.isnull(df["retweeted_status"])]
+    rts = df.loc[~pd.isnull(df['retweeted_status'])]
+    nonrts = df.loc[pd.isnull(df['retweeted_status'])]
 
     # Create edges for rts
-    edges1['source'] = rts["user"].apply(lambda x: fn.getScreenName(x))
+    edges1 = pd.DataFrame()  # Create empty df
+    edges1['source'] = rts['user'].apply(lambda x: fn.getScreenName(x))
     edges1['target'] = rts['retweeted_status'].apply(lambda x: fn.getOrigScreenName(x))
 
     # Create edges for mentions
     edges2 = pd.DataFrame()
-    edges2['source'] = nonrts["user"].apply(lambda x: fn.getScreenName(x))
+    edges2['source'] = nonrts['user'].apply(lambda x: fn.getScreenName(x))
     edges2['target'] = nonrts['entities'].apply(lambda x: fn.getMentions(x))
     edges2 = edges2.dropna()
-
     edges = pd.concat([edges1, edges2])
-
-
 
     # Create graph using the data
     G = nx.from_pandas_edgelist(edges, 'source', 'target')
 
-    # Partition graph based on 'best partition'
+    # Filter graph
+    G = fn.filter_for_largest_components(G, num_comp=lccs)
+    G = fn.filter_for_k_core(G, k_cores=k_cores)
+
+    # Communities and centralities
     partition = community.best_partition(G)
-
-    
-    # Turn partition into dataframe
-    partition1 = pd.DataFrame([partition]).T
-    partition1 = partition1.reset_index()
-    partition1.columns = ['index', 'value']
-
-    #Degree centrality
     dc = nx.degree_centrality(G)
-    dc = pd.DataFrame([dc.keys(), dc.values()]).T
-    dc.columns = ['names', 'values']  # call them whatever you like
-    dc = dc.sort_values(by='values', ascending=False)
-    dc1 = pd.merge(dc, partition1, how='left', left_on="names", right_on="index")
+    bc = nx.betweenness_centrality(G, k=min(100,len(G)))
+    ec = nx.eigenvector_centrality(G, max_iter=1000)
 
-    #Betweenness centrality
-    bc = nx.betweenness_centrality(G, k=100)
-    bc = pd.DataFrame([bc.keys(), bc.values()]).T
-    bc.columns = ['names', 'values']  # call them whatever you like
-    bc = bc.sort_values(by='values', ascending=False)
-    bc1 = pd.merge(bc, partition1, how='left', left_on="names", right_on="index")
+    # Set attributes (not necessisary)
+    nx.set_node_attributes(G, dc, 'cent_deg')
+    nx.set_node_attributes(G, bc, 'cent_bet')
+    nx.set_node_attributes(G, ec, 'cent_eig')
+    nx.set_node_attributes(G, partition, 'partition')
 
-    #Eigenvector centrality
-    ec = nx.eigenvector_centrality(G, weight='freq', max_iter=1000)
-    ec = pd.DataFrame([ec.keys(), ec.values()]).T
-    ec.columns = ['names', 'values']
-    ec = ec.sort_values(by='values', ascending=False)
-    ec1 = pd.merge(ec, partition1, how='left', left_on="names", right_on="index")
+    # Create dataframe for nodes and attributes
+    nodes = list(G.nodes())
+    nodes = pd.DataFrame(nodes)
+    nodes.columns = ['node']
 
-    # Inputs are nodes data to filter on, name of file to save it as,
-    # number of maximum nodes to take from each community, minimum centrality score
-    # and minimum numbe of connections
-    #nodes, net = fn.createTopNodesforVisual(bc1, "test", 10000, 0.0001, 1, edges)
-    nodes, net = fn.filter_graph_for_viz(bc1, edges)
+    # Map attributes to nodes dataframe
+    nodes['cent_deg'] = nodes['node'].map(dc)
+    nodes['cent_bet'] = nodes['node'].map(bc)
+    nodes['cent_eig'] = nodes['node'].map(ec)
+    nodes['partition'] = nodes['node'].map(partition)
 
-    # Make it exactly right for the d3 visual
-    nodes = fn.buildNodesFromLinks(net, bc1)
-    nodes = nodes.rename(columns={"cent": "betweenness", "value": "group", "id": "name"})
+    # Using node ids rather than names (necessisary?)
     nodes = nodes.reset_index()
-    nodes = nodes.rename(columns={"index": "id"})
-    net["source"] = net["source"].apply(lambda x: nodes.loc[nodes["name"] == x]["id"].values[0])
-    net["target"] = net["target"].apply(lambda x: nodes.loc[nodes["name"] == x]["id"].values[0])
+    nodes = nodes.rename(columns={'index': 'id'})
 
-    nodes = pd.merge(nodes, ec1, how="left", left_on="name", right_on="names")
-    nodes = nodes.drop(['names', 'index', 'value'], axis=1)
-    nodes = nodes.rename(columns={"values": "eigenvector"})
-    nodes = pd.merge(nodes, dc1, how="left", left_on="name", right_on="names")
-    nodes = nodes.drop(['names', 'index', 'value'], axis=1)
-    nodes = nodes.rename(columns={"values": "degree"})
-    nodes = nodes[['betweenness', 'degree', 'eigenvector', 'group', 'id', 'name']]
+    # Write edgelist to dataframe
+    edges = G.edges()
+    edges = pd.DataFrame(edges)
+    edges.columns = ['source', 'target']
 
-    nodes["tweet_text"] = nodes["name"].apply(lambda x: fn.getText1(x, df))
-    # Export data
-    #fn.exportData(nodes, net, "test7")
+    # Get tweet text and assign to node
+    nodes['tweet_text'] = nodes['node'].apply(lambda x: fn.getText1(x, df))
+    
+    # Rename and reorder to play nice with main.js (necessisary?)
+    nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text']
+    nodes = nodes[['betweenness','degree','eigenvector','group','id','name','tweet_text']]
+    
+    # Update edgelists to use ids (necessisary?)
+    edges['source'] = edges['source'].apply(lambda x: nodes.loc[nodes['name'] == x]['id'].values[0])
+    edges['target'] = edges['target'].apply(lambda x: nodes.loc[nodes['name'] == x]['id'].values[0])
 
+    # Convert nodes and edges to dictionaries
+    node_dict = nodes.to_dict(orient='records')
+    edge_dict = edges.to_dict(orient='records')
+    graph_dict = {'nodes': node_dict, 'links': edge_dict} # Because they are called links in main.js
 
-    #nodes = pd.read_csv("nodes.csv")
-    #net = pd.read_csv("net.csv")
+    # Write to JSON (necssisary?)
+    j1 = json.dumps(node_dict, indent=2)
+    j2 = json.dumps(edge_dict, indent=2)
 
-    d1 = nodes.to_dict(orient='records')
-    j1 = json.dumps(d1,indent=2)
-    d2 = net.to_dict(orient='records')
-    j2 = json.dumps(d2,indent=2)
-    d1 = {"nodes": d1, "links": d2}
-    data.foo = d1
+    # Here comes the foo!
+    data.foo = graph_dict
     return render_template("index.html")
 
 
