@@ -15,6 +15,8 @@ access_token_secret = parameters['access_token_secret']
 tweet_batch_size = parameters['tweet_batch_size']
 tweet_buffer_size = parameters['tweet_buffer_size']
 tracker = parameters['tracker']
+restart_listener = parameters['restart_listener']
+restart_file = parameters['restart_file']
 
 # Connect to API
 # TODO: Streamer can still run into limiting.
@@ -26,8 +28,16 @@ api = tw.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=False)
 # Buffer some number of tweets in a lit
 # Dump buffered tweets into an extended list
 # Once extended list exceeds batch limit, drop it by size of buffer
+
 tweet_buffer=[]      # Create a list that will hold tweets
-raw_tweets=[]
+if restart_listener == 1:
+    with open(restart_file) as json_data:
+        d = json.load(json_data)
+        json_data.close()
+    raw_tweets=list(d)
+else:
+    raw_tweets=[]
+    
 #N=1000       # Set a number of tweets to collect before dumping into a file
 class listener(StreamListener):
     def on_data(self,data):      # triggered when data appears

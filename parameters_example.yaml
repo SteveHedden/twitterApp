@@ -11,4 +11,7 @@ tweet_buffer_size: 200
 connected_components: 4
 k_cores: 4
 
-tracker: ['BlackLivesMatter']
+restart_listener: 1
+restart_file: 'raw_tweets.json'
+
+tracker: ['SpongeBob']
