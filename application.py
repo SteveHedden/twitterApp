@@ -6,7 +6,7 @@ import networkx as nx
 import community
 import functions as fn
 import yaml
-import listener
+#import listener
 #import parameters
 import codecs
 
@@ -111,9 +111,9 @@ def index():
     edge_dict = edges.to_dict(orient='records')
     graph_dict = {'nodes': node_dict, 'links': edge_dict} # Because they are called links in main.js
 
-    # Write to JSON (necssisary?)
-    j1 = json.dumps(node_dict, indent=2)
-    j2 = json.dumps(edge_dict, indent=2)
+    #In case want to test offline
+    #with open("test.json", 'w', encoding='utf-8') as f:
+    #    json.dump(graph_dict, f, ensure_ascii=False,indent=4)
 
     # Here comes the foo!
     data.foo = graph_dict

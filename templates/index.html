@@ -159,7 +159,7 @@ d3.json("/get-data", function(error, graph) {
       })
       // On click, toggle ego networks for the selected node.
       .on('click', function(d, i) {
-        $("#container").empty();
+        document.getElementById('container').innerHTML = "";
         number = String(d.tweet_id)
         console.log(number);
         twttr.widgets.createTweet(number,
