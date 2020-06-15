@@ -6,8 +6,10 @@ import networkx as nx
 import community
 import functions as fn
 import yaml
-#import listener
+import listener
 #import parameters
+import codecs
+
 with open('parameters.yaml') as file:
     parameters = yaml.full_load(file)
 lccs = parameters['connected_components']
@@ -25,7 +27,7 @@ data = DataStore()
 @application.route("/", methods=["GET", "POST"])
 def index():
     #Read in data
-    df = pd.read_json('raw_tweets.json')
+    df = pd.read_json(codecs.open("raw_tweets.json", 'r', 'utf-8'))
 
     # Create a source column in the df for the sn of the tweeter
     df['source'] = df['user'].apply(lambda x: fn.getScreenName(x))
@@ -109,8 +111,6 @@ def index():
     edge_dict = edges.to_dict(orient='records')
     graph_dict = {'nodes': node_dict, 'links': edge_dict} # Because they are called links in main.js
 
-    with open("test.json", 'w', encoding='utf-8') as f:
-        json.dump(graph_dict, f, ensure_ascii=False,indent=4)
     # Write to JSON (necssisary?)
     j1 = json.dumps(node_dict, indent=2)
     j2 = json.dumps(edge_dict, indent=2)
