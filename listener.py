@@ -63,7 +63,10 @@ class listener(StreamListener):
             f.close()
             raw_tweets[:]=[]         # reset the tweet list
             if len(os.listdir(out_path)) > tweet_batch_size / tweet_buffer_size:
-                os.remove(str(out_path) + str(sorted(os.listdir(out_path))[0])) # Remove earliest raw_data
+                oldest_timestamp = sorted(os.listdir(out_path))[0]
+                os.remove(str(out_path) + str(oldest_timestamp)) # Remove earliest raw_data
+            else:
+                pass
             try:
                 t0 = int(sorted(os.listdir(preproc_path))[-1].split('_')[-1].split('.')[0])
             except:
