@@ -6,10 +6,22 @@ import json
 import yaml
 import os
 import functions as fn
+import shutil
 
 # Load parameters
 with open('parameters.yaml') as file:
     parameters = yaml.full_load(file)
+    # Create path if it doesn't exist'
+    prj_path = 'data/' + str(parameters['project']) + '/'
+    out_path = 'data/' + str(parameters['project']) + '/raw_out/'
+    preproc_path = 'data/' + str(parameters['project']) + '/preprocessed/'
+    if not os.path.exists(prj_path):
+        os.makedirs(prj_path)
+        os.makedirs(out_path)
+        os.makedirs(preproc_path)
+    #filename = os.path.basename(file)
+    #copyfile(file, os.path.join('data/' + str(parameters['project']) + '/', 'parameters.yaml'))
+    newPath = shutil.copy('parameters.yaml', 'data/' + str(parameters['project']) + '/parameters.yaml')
 
 consumer_key = parameters['consumer_key']
 consumer_secret = parameters['consumer_secret']
@@ -55,10 +67,10 @@ class listener(StreamListener):
             try:
                 t0 = int(sorted(os.listdir(preproc_path))[-1].split('_')[-1].split('.')[0])
             except:
-                t0 = int(timestamp)
+                t0 = int(sorted(os.listdir(out_path))[0].split('_')[-1].split('.')[0])
+            #t0 = int(sorted(os.listdir(out_path))[0].split('_')[-1].split('.')[0])
             t1 = int(timestamp)
             dt = t1 - t0
-            print(dt)
             if dt > refresh_interval:
                 #os.system('preprocessor.py')
                 tweet_list = fn.concat_raw_files()
