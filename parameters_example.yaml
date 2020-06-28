@@ -5,13 +5,17 @@ consumer_secret: ''
 access_token: ''
 access_token_secret: ''
 
-tweet_batch_size: 10000
-tweet_buffer_size: 200
+tweet_batch_size: 30000
+tweet_buffer_size: 50
+raw_batch_size: 10000
+refresh_interval: 120
 
-connected_components: 4
+connected_components: 20
 k_cores: 4
 
-restart_listener: 1
+project: 'TraitorTrump'
+
+restart_listener: 0
 restart_file: 'raw_tweets.json'
 
-tracker: ['SpongeBob']
+tracker: ['TraitorTrump', 'TRE45ON']
