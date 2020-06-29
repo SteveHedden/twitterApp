@@ -64,13 +64,13 @@ def getText1(x, df):
         return;
 
 def getTweetID(x, df):
-    length1 = len(df.loc[df["source"] == x]["id"])
-    length2 = len(df.loc[df["target"] == x]["id"])
+    length1 = len(df.loc[df["source"] == x]["id_str"])
+    length2 = len(df.loc[df["target"] == x]["id_str"])
     if length1 > 0:
-        text = df.loc[df["source"] == x]["id"].values[0]
+        text = df.loc[df["source"] == x]["id_str"].values[0]
         return text;
     elif length2 > 0:
-        text = df.loc[df["target"] == x]["id"].values[0]
+        text = df.loc[df["target"] == x]["id_str"].values[0]
         return text;
     else:
         return;
@@ -181,8 +181,8 @@ def write_graph_dict(tweet_list):
     # Get tweet id and assign to node
     nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
     nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
-    nodes['tweet_id'] = nodes['tweet_id'].astype(int)
-    nodes['tweet_id'] = nodes['tweet_id'].astype(str)
+    #nodes['tweet_id'] = nodes['tweet_id'].astype(int)
+    #nodes['tweet_id'] = nodes['tweet_id'].astype(str)
 
 
     # Rename and reorder to play nice with main.js (necessisary?)

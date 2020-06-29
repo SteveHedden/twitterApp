@@ -7,37 +7,62 @@
   stroke: #fff;
   stroke-width: 1.5px;
 }
+
 div.tooltip {
-    position: absolute;
-    background-color: white;
-    max-width; 200px;
-    height: auto;
-    padding: 10px;
-    border-style: solid;
-    border-radius: 8px;
-    border-width: 1px;
-    box-shadow: 3px 3px 10px rgba(0, 0, 0, .5);
-    pointer-events: none;
-    background: lightgrey;
-    border: 0px;
-  }
+  position: absolute;
+  background-color: white;
+  max-width;
+  200px;
+  height: auto;
+  padding: 10px;
+  border-style: solid;
+  border-radius: 8px;
+  border-width: 1px;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, .5);
+  pointer-events: none;
+  background: lightgrey;
+  border: 0px;
+}
 
 text {
-  font-family: Saira;
+  font-family: Helvetica Neue;
   font-size: 10px;
-}
-#tweet {
-  width: 400px !important;
-}
-
-#tweet iframe {
-  border: none !important;
-  box-shadow: none !important;
 }
 
 #container {
-  width:50%;
-  height:200px;
+  width: 30%;
+  height: 200px;
   float: right;
+  margin-right: 15px;
+  font-family: Helvetica Neue, sans-serif;
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
 
+#container2 {
+    width:35%;
+    height:200px;
+    float: right;
+}
+
+.textIntro {
+  font-family: Helvetica Neue, sans-serif;
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.title {
+  font-size: 24px;
+  font-family: Helvetica Neue, sans-serif;
+
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: Helvetica Neue, sans-serif;
+  font-size: 10px;
 }
