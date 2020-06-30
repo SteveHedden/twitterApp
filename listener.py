@@ -53,7 +53,7 @@ class listener(StreamListener):
     def on_data(self,data):      # triggered when data appears
         tweet=json.loads(data)   # add the twitter data to the tweet list (paste in a dictionary format)
         clear_output()
-        print(len(raw_tweets),tweet['user']['screen_name'],':',tweet['text'])
+        #print(len(raw_tweets),tweet['user']['screen_name'],':',tweet['text'])
         raw_tweets.append(tweet)
         if len(raw_tweets) > tweet_buffer_size:      # if the length of the list 'tweets' is greater than N, then:
             timestamp=datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -87,4 +87,4 @@ class listener(StreamListener):
 #Track and filter
 twitterStream=Stream(auth, listener())
 track=tracker
-twitterStream.filter(track=track, is_async=False)  # track can also take a location argument
+twitterStream.filter(track=track, is_async=True)  # track can also take a location argument

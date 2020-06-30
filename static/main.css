@@ -22,41 +22,55 @@ div.tooltip {
   pointer-events: none;
   background: lightgrey;
   border: 0px;
+  font-family: "Noto Sans", "Noto Sans CJK", sans-serif;
 }
 
-text {
-  font-family: Helvetica Neue;
-  font-size: 10px;
+.text {
+  font-family: 'Noto Sans';
+  font-size: 14px;
 }
 
 #container {
   width: 30%;
-  height: 200px;
+  height: 100px;
   float: right;
   margin-right: 15px;
-  font-family: Helvetica Neue, sans-serif;
-  font-size: 12px;
+  font-family: "Noto Sans", "Noto Sans CJK", sans-serif;
+  font-size: 14px;
   margin-top: 10px;
   margin-bottom: 10px;
-}
 
-#container2 {
-    width:35%;
-    height:200px;
-    float: right;
 }
 
 .textIntro {
-  font-family: Helvetica Neue, sans-serif;
-  font-size: 12px;
+  font-family: "Noto Sans", "Noto Sans CJK", sans-serif;
+  font-size: 14px;
   margin-top: 10px;
   margin-bottom: 10px;
+  padding-left: 15px;
+  color: #36454f;
+}
+
+.label {
+  font-family: "Noto Sans", "Noto Sans CJK", sans-serif;
+  font-size: 14px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-left: 15px;
+  font-weight: bold;
+  color: #36454f;
 }
 
 .title {
   font-size: 24px;
-  font-family: Helvetica Neue, sans-serif;
-
+  color: white;
+  font-family:'PT Sans';
+  background-color: #36454f;
+  opacity: 1;
+  padding: 10px;
+  letter-spacing: 2px;
+  padding-left: 15px;
+  font-weight:bold;
 }
 
 html,

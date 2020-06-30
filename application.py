@@ -6,7 +6,7 @@ import networkx as nx
 import community
 import functions as fn
 import yaml
-#import listener
+import listener
 #import parameters
 import codecs
 import os

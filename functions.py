@@ -19,6 +19,7 @@ def getScreenName(x):
     except:
         return;
 
+
 def getOrigScreenName(x):
     try:
         temp = x["user"]["screen_name"]
@@ -26,13 +27,15 @@ def getOrigScreenName(x):
     except:
         return;
 
+
 def getMentions(x):
     try:
         temp = x["user_mentions"][0]["screen_name"]
         return temp;
     except:
         return np.NaN;
-    
+
+
 def filter_graph_for_viz(df, edges):
     top = df.groupby('value')['names'].filter(lambda x: len(x) > 0)
     df = df.loc[df['names'].isin(top)]
@@ -40,9 +43,11 @@ def filter_graph_for_viz(df, edges):
     nodes = buildNodesFromLinks(degreeNetwork, df)
     return (nodes, degreeNetwork)
 
+
 def filter_for_largest_components(G, num_comp):
-    G = nx.compose_all(sorted(nx.connected_component_subgraphs(G), key = len, reverse=True)[:num_comp])
+    G = nx.compose_all(sorted(nx.connected_component_subgraphs(G), key=len, reverse=True)[:num_comp])
     return G
+
 
 def filter_for_k_core(G, k_cores):
     G.remove_edges_from(G.selfloop_edges())
@@ -50,6 +55,7 @@ def filter_for_k_core(G, k_cores):
     if len(G_tmp) <= 3:
         G_tmp = nx.k_core(G)
     return G_tmp
+
 
 def getText1(x, df):
     length1 = len(df.loc[df["source"] == x]["text"])
@@ -63,6 +69,7 @@ def getText1(x, df):
     else:
         return;
 
+
 def getTweetID(x, df):
     length1 = len(df.loc[df["source"] == x]["id_str"])
     length2 = len(df.loc[df["target"] == x]["id_str"])
@@ -74,6 +81,7 @@ def getTweetID(x, df):
         return text;
     else:
         return;
+
 
 def concat_raw_files():
     # Load parameters
@@ -94,17 +102,19 @@ def concat_raw_files():
     tweet_list = []
     for filename in sub_list:
         try:
-            f = open(raw_out_path + filename,'r')
+            f = open(raw_out_path + filename, 'r')
             ds = json.load(f)
             tweet_list.extend(ds)
             f.close()
         except:
             print('Error in: ' + str(filename))
     return tweet_list
-# Process data into network for application.py
-#file = str(out_path) + str(sorted(os.listdir(out_path))[0])
 
-#df = pd.read_json(codecs.open(file, 'r', 'utf-8'))
+
+# Process data into network for application.py
+# file = str(out_path) + str(sorted(os.listdir(out_path))[0])
+
+# df = pd.read_json(codecs.open(file, 'r', 'utf-8'))
 
 def write_graph_dict(tweet_list):
     with open('parameters.yaml') as file:
@@ -146,13 +156,14 @@ def write_graph_dict(tweet_list):
     # Communities and centralities
     partition = community.best_partition(G)
     dc = nx.degree_centrality(G)
-    bc = nx.betweenness_centrality(G, k=min(100,len(G)))
-    ec = nx.eigenvector_centrality(G, max_iter=1000)
+    #bc = nx.betweenness_centrality(G, k=min(100, len(G)))
+    #ec = nx.eigenvector_centrality(G, max_iter=1000)
+    #ec = nx.eigenvector_centrality(G)
 
     # Set attributes (not necessisary)
     nx.set_node_attributes(G, dc, 'cent_deg')
-    nx.set_node_attributes(G, bc, 'cent_bet')
-    nx.set_node_attributes(G, ec, 'cent_eig')
+    #nx.set_node_attributes(G, bc, 'cent_bet')
+    #nx.set_node_attributes(G, ec, 'cent_eig')
     nx.set_node_attributes(G, partition, 'partition')
 
     # Create dataframe for nodes and attributes
@@ -162,8 +173,8 @@ def write_graph_dict(tweet_list):
 
     # Map attributes to nodes dataframe
     nodes['cent_deg'] = nodes['node'].map(dc)
-    nodes['cent_bet'] = nodes['node'].map(bc)
-    nodes['cent_eig'] = nodes['node'].map(ec)
+    #nodes['cent_bet'] = nodes['node'].map(bc)
+    #nodes['cent_eig'] = nodes['node'].map(ec)
     nodes['partition'] = nodes['node'].map(partition)
 
     # Using node ids rather than names (necessisary?)
@@ -181,13 +192,14 @@ def write_graph_dict(tweet_list):
     # Get tweet id and assign to node
     nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
     nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
-    #nodes['tweet_id'] = nodes['tweet_id'].astype(int)
-    #nodes['tweet_id'] = nodes['tweet_id'].astype(str)
-
+    # nodes['tweet_id'] = nodes['tweet_id'].astype(int)
+    # nodes['tweet_id'] = nodes['tweet_id'].astype(str)
 
     # Rename and reorder to play nice with main.js (necessisary?)
-    nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text', 'tweet_id']
-    nodes = nodes[['betweenness','degree','eigenvector','group','id','name','tweet_text', 'tweet_id']]
+    #nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text', 'tweet_id']
+    #nodes = nodes[['betweenness', 'degree', 'eigenvector', 'group', 'id', 'name', 'tweet_text', 'tweet_id']]
+    nodes.columns = ['id', 'name', 'degree', 'group', 'tweet_text', 'tweet_id']
+    nodes = nodes[['degree', 'group', 'id', 'name', 'tweet_text', 'tweet_id']]
 
     # Update edgelists to use ids (necessisary?)
     edges['source'] = edges['source'].apply(lambda x: nodes.loc[nodes['name'] == x]['id'].values[0])
@@ -196,12 +208,12 @@ def write_graph_dict(tweet_list):
     # Convert nodes and edges to dictionaries
     node_dict = nodes.to_dict(orient='records')
     edge_dict = edges.to_dict(orient='records')
-    graph_dict = {'nodes': node_dict, 'links': edge_dict} # Because they are called links in main.js
-    
+    graph_dict = {'nodes': node_dict, 'links': edge_dict}  # Because they are called links in main.js
+
     # Write to json with datetime stamp
-    timestamp=datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    f=open(str(out_path) + 'preprocessed_%s.json'%timestamp,'w')     # MacOS path
-    json.dump(graph_dict,f)  # dump the tweets into a json file
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    f = open(str(out_path) + 'preprocessed_%s.json' % timestamp, 'w')  # MacOS path
+    json.dump(graph_dict, f)  # dump the tweets into a json file
     f.close()
 
     # Keep only two files

@@ -2,14 +2,6 @@ var svg = d3.select("svg");
     width = +svg.attr("width"),
     height = +svg.attr("height");
 
-
-
-/*
-var svg = d3.select("svg");
-    width = window.width,
-    height = window.height;
-*/
-
 // Call zoom for svg container.
 svg.call(d3.zoom().on('zoom', zoomed));
 
@@ -18,10 +10,11 @@ var color = d3.scaleOrdinal(d3.schemeCategory20);
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink())//Or to use names rather than indices: .id(function(d) { return d.id; }))
     .force("charge", d3.forceManyBody().strength([-120]).distanceMax([500]))
-    .force("center", d3.forceCenter(width / 2, height / 2));
+    .force("center", d3.forceCenter(window.innerWidth/4, window.innerHeight/2));
 
 var container = svg.append('g');
 
+/*
 // Create form for search (see function below).
 var search = d3.select("body").append('form').attr('onsubmit', 'return false;');
 
@@ -35,6 +28,7 @@ var button = search.append('input')
   .attr('value', 'Search')
   .on('click', function () { searchNodes(); });
 
+*/
 // Toggle for ego networks on click (below).
 var toggle = 0;
 
@@ -48,19 +42,27 @@ var tooltip = d3.select("body")
 d3.json("/get-data", function(error, graph) {
   if (error) throw error;
 
-  document.getElementById('container').innerHTML = "Click on any circle to display the tweet.";
+  function sortByAttribue(arr, attribute) {
+  return arr.sort(function(a,b) {
+    return a[attribute] < b[attribute];
+  });
+}
 
-   function topTweets(d) {
-      number = d3.max(graph.nodes, function(d) {return d.tweet_id;})
+    sortByAttribue(graph.nodes, "degree") // returns Carmelo Anthony first
+      function topTweets(d) {
+      number = graph.nodes[0]["tweet_id"]
       twttr.widgets.createTweet(number,
       document.getElementById('container2'),
       {
-    theme: 'light',
-    cards: 'hidden',
-  }
-  );
-}
-    topTweets();
+        theme: 'light',
+        cards: 'hidden',
+        conversation: 'none',
+      }
+      );
+
+    }
+      topTweets();
+
   // Make object of all neighboring nodes.
   var linkedByIndex = {};
   graph.links.forEach(function(d) {
@@ -118,9 +120,9 @@ d3.json("/get-data", function(error, graph) {
       tooltip.transition()
         .duration(300)
         .style("opacity", .8);
-      tooltip.html("<b>" + "Name: " + "</b>" + d.name + "<p/>group:" + d.tweet_text)
+      tooltip.html("<b>" + "@" + "</b>" + d.name + "<p/>" + d.tweet_text)
         .style('font-size', '16px')
-        .style('font-family', 'Helvetica')
+        .style('font-family', "Noto Sans")
         .style("left", (d3.event.pageX) + "px")
         .style("top", (d3.event.pageY + 10) + "px");
     })
@@ -133,13 +135,14 @@ d3.json("/get-data", function(error, graph) {
       .on('click', function(d, i) {
         document.getElementById('container').innerHTML = "";
         number = d.tweet_id
-        console.log(number);
         twttr.widgets.createTweet(number,
           document.getElementById('container'),
           {
-            theme: 'light'
+            conversation : 'none',    // or all
+            theme: 'light',
           }
         );
+
               if (toggle == 0) {
           // Ternary operator restyles links and nodes if they are adjacent.
           d3.selectAll('.link').style('stroke-opacity', function (l) {
