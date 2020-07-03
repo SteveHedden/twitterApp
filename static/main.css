@@ -39,6 +39,8 @@ div.tooltip {
   font-size: 14px;
   margin-top: 10px;
   margin-bottom: 10px;
+  position: relative;
+  top: 10px;
 
 }
 
@@ -48,7 +50,6 @@ div.tooltip {
   margin-top: 10px;
   margin-bottom: 10px;
   padding-left: 15px;
-  color: #36454f;
 }
 
 .label {
@@ -58,14 +59,13 @@ div.tooltip {
   margin-bottom: 10px;
   padding-left: 15px;
   font-weight: bold;
-  color: #36454f;
 }
 
 .title {
   font-size: 24px;
   color: white;
   font-family:'PT Sans';
-  background-color: #36454f;
+  background-color:#36454f;
   opacity: 1;
   padding: 10px;
   letter-spacing: 2px;
@@ -79,4 +79,21 @@ body {
   height: 100%;
   font-family: Helvetica Neue, sans-serif;
   font-size: 10px;
+}
+footer {
+  text-align: center;
+  padding: 3px;
+  background-color: #36454f;
+  color: white;
+  width: 100%;
+}
+
+header {
+   width: 100%;
+}
+
+#container2 {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
 }

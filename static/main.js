@@ -122,7 +122,7 @@ d3.json("/get-data", function(error, graph) {
         .style("opacity", .8);
       tooltip.html("<b>" + "@" + "</b>" + d.name + "<p/>" + d.tweet_text)
         .style('font-size', '16px')
-        .style('font-family', "Noto Sans")
+        .attr("font-family", "noto sans")
         .style("left", (d3.event.pageX) + "px")
         .style("top", (d3.event.pageY + 10) + "px");
     })
