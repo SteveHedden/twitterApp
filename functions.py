@@ -27,6 +27,16 @@ def getOrigScreenName(x):
     except:
         return;
 
+def getScreenName2(x):
+    if pd.isnull(x['retweeted_status']):
+        try:
+            temp = x['user']['screen_name']
+        except:
+            return
+    else:
+        temp = x['retweeted_status']['user']['screen_name']
+    return temp
+
 
 def getMentions(x):
     try:
@@ -34,6 +44,19 @@ def getMentions(x):
         return temp;
     except:
         return np.NaN;
+
+def rtCount(x):
+    if pd.isnull(x):
+        return 0
+    else:
+        count = x['retweet_count']
+        return count
+
+def getMaxRTs(x, df):
+    tweets = df.loc[df['original_screen_name'] == x]
+    tweets = tweets.reset_index()
+    max = str(tweets['rt_count'].max())
+    return max
 
 
 def filter_graph_for_viz(df, edges):
@@ -56,19 +79,7 @@ def filter_for_k_core(G, k_cores):
         G_tmp = nx.k_core(G)
     return G_tmp
 
-
-def getText1(x, df):
-    length1 = len(df.loc[df["source"] == x]["text"])
-    length2 = len(df.loc[df["target"] == x]["text"])
-    if length1 > 0:
-        text = df.loc[df["source"] == x]["text"].values[0]
-        return text;
-    elif length2 > 0:
-        text = df.loc[df["target"] == x]["text"].values[0]
-        return text;
-    else:
-        return;
-
+"""
 
 def getTweetID(x, df):
     length1 = len(df.loc[df["source"] == x]["id_str"])
@@ -82,6 +93,76 @@ def getTweetID(x, df):
     else:
         return;
 
+def getText1(x, df):
+    tweets = df.loc[df['original_screen_name'] == x]
+    tweets = tweets.reset_index()
+    max = 0
+    try:
+        if ~pd.isnull(tweets['retweeted_status'][0]):
+            for x in tweets['retweeted_status']:
+                temp = x['retweet_count']
+                if temp > 0:
+                    max = temp
+            for x in tweets['retweeted_status']:
+                if x['retweet_count'] == max:
+                    rts = x['text']
+            return rts
+        else:
+            #text = tweets['text']
+            return "null"
+    except:
+        #text = tweets['text']
+        return "null2"
+
+
+
+def getTweetID(x, df):
+    id = str(df.loc[df['original_screen_name'] == x]['id_str'].values[0])
+    return id
+"""
+def getTweetID(x, df):
+    tweets = df.loc[df['original_screen_name'] == x]
+    tweets = tweets.reset_index()
+    # First deal with people who tweeted but had no RTs (losers)
+    if tweets['rt_count'].sum() == 0:
+        # I think a lot of these may be bots. They have tweeted multiple times in a short
+        # period of time with no RTs. So they are eithe bots or suck at twitter.
+        if len(tweets) > 1:
+            # print(tweets['original_screen_name'])
+            return str(tweets.iloc[0]['text'])
+        if len(tweets) == 1:
+            return str(tweets['text'])
+    else:
+        # This means that this person was retweeted during this interval. We want the
+        # max value of RTs looking at all their instances.
+
+        # First get rid of all original tweets since that doesn't give us any information
+        tweets = tweets.loc[tweets['rt_count'] > 0]
+        max = tweets['rt_count'].max()
+        id = str(tweets.loc[tweets['rt_count'] == max]['id_str'].values[0])
+        return id
+
+def getText1(x, df):
+    tweets = df.loc[df['original_screen_name'] == x]
+    tweets = tweets.reset_index()
+    # First deal with people who tweeted but had no RTs (losers)
+    if tweets['rt_count'].sum() == 0:
+        # I think a lot of these may be bots. They have tweeted multiple times in a short
+        # period of time with no RTs. So they are eithe bots or suck at twitter.
+        if len(tweets) > 1:
+            # print(tweets['original_screen_name'])
+            return str(tweets.iloc[0]['text'])
+        if len(tweets) == 1:
+            return str(tweets['text'])
+    else:
+        # This means that this person was retweeted during this interval. We want the
+        # max value of RTs looking at all their instances.
+
+        # First get rid of all original tweets since that doesn't give us any information
+        tweets = tweets.loc[tweets['rt_count'] > 0]
+        max = tweets['rt_count'].max()
+        text = str(tweets.loc[tweets['rt_count'] == max]['text'].values[0])
+        return text
 
 def concat_raw_files():
     # Load parameters
@@ -110,11 +191,45 @@ def concat_raw_files():
             print('Error in: ' + str(filename))
     return tweet_list
 
+def getNodes(G, dc, partition, df):
+    # Set attributes (not necessisary)
+    nx.set_node_attributes(G, dc, 'cent_deg')
+    nx.set_node_attributes(G, partition, 'partition')
 
-# Process data into network for application.py
-# file = str(out_path) + str(sorted(os.listdir(out_path))[0])
+    # Create dataframe for nodes and attributes
+    nodes = list(G.nodes())
+    nodes = pd.DataFrame(nodes)
+    nodes.columns = ['node']
 
-# df = pd.read_json(codecs.open(file, 'r', 'utf-8'))
+    # Map attributes to nodes dataframe
+    nodes['cent_deg'] = nodes['node'].map(dc)
+    nodes['partition'] = nodes['node'].map(partition)
+
+    # Using node ids rather than names (necessary?)
+    nodes = nodes.reset_index()
+    nodes = nodes.rename(columns={'index': 'id'})
+
+    # Get tweet text and assign to node
+    nodes['tweet_text'] = nodes['node'].apply(lambda x: fn.getText1(x, df))
+
+    # Get tweet id and assign to node
+    nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
+    nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
+
+    # Rename and reorder to play nice with main.js (necessisary?)
+    nodes.columns = ['id', 'name', 'degree', 'group', 'tweet_text', 'tweet_id']
+    nodes = nodes[['degree', 'group', 'id', 'name', 'tweet_text', 'tweet_id']]
+
+    return nodes
+
+
+def cleanRawData(df):
+    #Create a new column for total RT count. Needed to get TOP tweet text and ID
+    #from users with multiple tweets and/or retweets
+    df['rt_count'] = df['retweeted_status'].apply(lambda x: rtCount(x))
+
+    df['original_screen_name'] = df.apply(lambda x: fn.getScreenName2(x), axis=1)
+    return df
 
 def write_graph_dict(tweet_list):
     with open('parameters.yaml') as file:
@@ -127,8 +242,12 @@ def write_graph_dict(tweet_list):
     df = pd.DataFrame(tweet_list)
 
     # Create a source column in the df for the sn of the tweeter
-    df['source'] = df['user'].apply(lambda x: fn.getScreenName(x))
-    df['target'] = df['retweeted_status'].apply(lambda x: fn.getOrigScreenName(x))
+    #df['source'] = df['user'].apply(lambda x: fn.getScreenName(x))
+    #df['target'] = df['retweeted_status'].apply(lambda x: fn.getOrigScreenName(x))
+
+    df = cleanRawData(df)
+    #df['source'] = df['original_screen_name']
+    #df['target'] = df['source']
 
     # Break into retweets and non-reweets
     rts = df.loc[~pd.isnull(df['retweeted_status'])]
@@ -156,50 +275,20 @@ def write_graph_dict(tweet_list):
     # Communities and centralities
     partition = community.best_partition(G)
     dc = nx.degree_centrality(G)
-    #bc = nx.betweenness_centrality(G, k=min(100, len(G)))
-    #ec = nx.eigenvector_centrality(G, max_iter=1000)
-    #ec = nx.eigenvector_centrality(G)
 
-    # Set attributes (not necessisary)
-    nx.set_node_attributes(G, dc, 'cent_deg')
-    #nx.set_node_attributes(G, bc, 'cent_bet')
-    #nx.set_node_attributes(G, ec, 'cent_eig')
-    nx.set_node_attributes(G, partition, 'partition')
+    nodes = fn.getNodes(G, dc, partition, df)
 
-    # Create dataframe for nodes and attributes
-    nodes = list(G.nodes())
-    nodes = pd.DataFrame(nodes)
-    nodes.columns = ['node']
+    # Get top groups
+    topGroups = nodes.sort_values(['degree'], ascending=False)['group'].head(100).values[:]
+    topGroups = nodes['group'].unique().tolist()
 
-    # Map attributes to nodes dataframe
-    nodes['cent_deg'] = nodes['node'].map(dc)
-    #nodes['cent_bet'] = nodes['node'].map(bc)
-    #nodes['cent_eig'] = nodes['node'].map(ec)
-    nodes['partition'] = nodes['node'].map(partition)
-
-    # Using node ids rather than names (necessisary?)
-    nodes = nodes.reset_index()
-    nodes = nodes.rename(columns={'index': 'id'})
+    # Write to master df
+    fn.buildCommunityData(nodes, topGroups, df)
 
     # Write edgelist to dataframe
     edges = G.edges()
     edges = pd.DataFrame(edges)
     edges.columns = ['source', 'target']
-
-    # Get tweet text and assign to node
-    nodes['tweet_text'] = nodes['node'].apply(lambda x: fn.getText1(x, df))
-
-    # Get tweet id and assign to node
-    nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
-    nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
-    # nodes['tweet_id'] = nodes['tweet_id'].astype(int)
-    # nodes['tweet_id'] = nodes['tweet_id'].astype(str)
-
-    # Rename and reorder to play nice with main.js (necessisary?)
-    #nodes.columns = ['id', 'name', 'degree', 'betweenness', 'eigenvector', 'group', 'tweet_text', 'tweet_id']
-    #nodes = nodes[['betweenness', 'degree', 'eigenvector', 'group', 'id', 'name', 'tweet_text', 'tweet_id']]
-    nodes.columns = ['id', 'name', 'degree', 'group', 'tweet_text', 'tweet_id']
-    nodes = nodes[['degree', 'group', 'id', 'name', 'tweet_text', 'tweet_id']]
 
     # Update edgelists to use ids (necessisary?)
     edges['source'] = edges['source'].apply(lambda x: nodes.loc[nodes['name'] == x]['id'].values[0])
@@ -224,67 +313,40 @@ def write_graph_dict(tweet_list):
         pass
     return
 
+def buildCommunityData(nodes, topGroups, df):
+    with open('parameters.yaml') as file:
+        parameters = yaml.full_load(file)
+    communities_path = 'data/' + str(parameters['project']) + '/communities/'
+    if not os.path.exists(communities_path):
+        os.makedirs(communities_path)
+    project = parameters['project']
+    out_path = 'data/' + str(project) + '/communities/'
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
-'''def build_graph_from_data(G, df):
-    df = G.loc[(G['source'].isin(df['names'])) & (G['target'].isin(df['names']))]
-    G = nx.from_pandas_edgelist(df, 'source', 'target')
-    G = filter_for_largest_components(G, lccs) # second argument is number of connected componenets
-    G = filter_for_k_core(G, k_cores)
-    edgelist = nx.to_pandas_edgelist(G)
-    df_edgelist = pd.DataFrame(edgelist[['source', 'target']])
-    return df_edgelist
+    df1 = pd.DataFrame()
+    for group in topGroups:
+        # pre-process text and store the same
+        temp = nodes.loc[nodes["group"] == group]
 
-def createTopNodesforVisual(df, nameOfFile, head, threshold, minDegree, edges):
-    # Only use groups with more than X members
-    top = df.groupby('value')['names'].filter(lambda x: len(x) > 0)
-    df = df.loc[df['names'].isin(top)]
-    degreeNetwork = filterByPartitionAndCentrality(df, head, threshold)
-    degreeNetwork = degreeNetwork.sort_values(by="values", ascending=False).head(head)
-    singles = degreeNetwork.groupby('value')['names'].filter(lambda x: len(x) < minDegree)
-    degreeNetwork = degreeNetwork.loc[~degreeNetwork['names'].isin(singles)]
-    degreeNetwork = buildNetworkFromData(edges, degreeNetwork, minDegree)
-    nodes = buildNodesFromLinks(degreeNetwork, df)
-    # exportData(nodes,degreeNetwork,nameOfFile)
-    return (nodes, degreeNetwork)
+        df2 = pd.DataFrame(
+            columns=['group', 'influencers', 'date', 'tweet_text', 'tweet_id'])
 
-def filterByPartitionAndCentrality(df, head, centralityThreshold):
-    df = df.groupby('value').head(head)
-    # df = df.head(head)
-    df = df.loc[df['values'] > centralityThreshold]
-    return df
+        # influencers
+        temp = temp.sort_values(['degree'], ascending=False)
+        influencers = list(temp['name'][:5])
+        df2['influencers'] = influencers
 
-def buildNetworkFromData(network, df, minDegree):
-    df = network.loc[(network['source'].isin(df['names'])) & (network['target'].isin(df['names']))]
-    G_clean = nx.from_pandas_edgelist(df, 'source', 'target')
-    remove = [node for node, degree in dict(G_clean.degree()).items() if degree < minDegree]
-    G_clean.remove_nodes_from(remove)
-    G_clean = nx.to_pandas_edgelist(G_clean)
-    # G_clean = pd.merge(G_clean,names,how='left',left_on='source',right_on='nconst')
-    # G_clean = pd.merge(G_clean,names,how='left',left_on='target',right_on='nconst')
-    G_clean = pd.DataFrame(G_clean[['source', 'target']])
-    # G_clean.columns = ['source','target']
-    # G_clean = G_clean.dropna()
-    # G_clean = G_clean.drop_duplicates()
-    return G_clean
+        df2['group'] = group
+        df2["date"] = timestamp
 
-def buildNodesFromLinks(df, centralityData):
-    nodes1 = pd.DataFrame(df['source'])
-    nodes2 = pd.DataFrame(df['target'])
-    nodes2.columns = ['source']
-    nodes = pd.concat([nodes1, nodes2])
-    nodes = nodes.drop_duplicates()
-    nodes2 = pd.merge(nodes, centralityData, how='left', left_on='source', right_on='names')
-    nodes2 = nodes2.dropna()
-    nodes2 = pd.DataFrame(nodes2[['names', 'values', 'value']])
-    nodes2.columns = ['id', 'cent', 'value']
-    return nodes2
+        df2['tweet_text'] = df2['influencers'].apply(lambda x: fn.getText1(x, df))
+        df2['tweet_id'] = df2['influencers'].apply(lambda x: fn.getTweetID(x, df))
+        df2['number_of_retweets'] = df2['influencers'].apply(lambda x: fn.getMaxRTs(x, df))
 
-def exportData(nodes, network, fileName):
-    d1 = nodes.to_dict(orient='records')
-    j1 = json.dumps(d1)
-    d2 = network.to_dict(orient='records')
-    j2 = json.dumps(d2)
-    d1 = {"nodes": d1, "links": d2}
-    with open(fileName + ".json", 'w', encoding='utf-8') as f:
-        json.dump(d1, f, ensure_ascii=False, indent=4)'''
-
+        df1 = df1.append(df2)
+        # Write to csv with datetime stamp
+    df1 = df1.to_dict(orient="records")
+    # df1.to_csv(str(out_path) + "communities" + timestamp + ".csv")  # MacOS path
+    f = open(str(out_path) + 'communities_%s.json' % timestamp, 'w')  # MacOS path
+    json.dump(df1, f)  # dump the tweets into a json file
+    f.close()
