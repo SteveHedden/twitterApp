@@ -329,7 +329,7 @@ def buildCommunityData(nodes, topGroups, df):
         temp = nodes.loc[nodes["group"] == group]
 
         df2 = pd.DataFrame(
-            columns=['group', 'influencers', 'date', 'tweet_text', 'tweet_id'])
+            columns=['group', 'influencers', 'tweet_text', 'tweet_id'])
 
         # influencers
         temp = temp.sort_values(['degree'], ascending=False)
@@ -337,7 +337,10 @@ def buildCommunityData(nodes, topGroups, df):
         df2['influencers'] = influencers
 
         df2['group'] = group
-        df2["date"] = timestamp
+        timestamp = pd.datetime.now().replace(microsecond=0)
+        #df2["date"] = str(timestamp)
+        df2.insert(0, 'date', timestamp)
+        df2['date'] = df2['date'].astype(str)
 
         df2['tweet_text'] = df2['influencers'].apply(lambda x: fn.getText1(x, df))
         df2['tweet_id'] = df2['influencers'].apply(lambda x: fn.getTweetID(x, df))
