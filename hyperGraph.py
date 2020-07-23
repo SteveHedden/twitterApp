@@ -12,6 +12,7 @@ import community
 import datetime
 import yaml
 import functions as fn
+import NLP as NLP
 
 with open('parameters.yaml') as file:
     parameters = yaml.full_load(file)
@@ -41,7 +42,10 @@ for filename in sub_list:
 
 
 raw = pd.DataFrame(raw)
-raw['number_of_retweets'] = raw['number_of_retweets'].map({'nan': 0})
+#raw.to_csv("test.csv")
+#raw['number_of_retweets'] = raw['number_of_retweets'].map({'nan': 0})
+raw['number_of_retweets'] = raw['number_of_retweets'].replace({'nan': 0})
+raw['number_of_retweets'] = raw['number_of_retweets'].astype(int)
 
 #raw.to_csv("test2.csv")
 #raw = fn.cleanRawData(raw)
@@ -52,7 +56,7 @@ raw['number_of_retweets'] = raw['number_of_retweets'].map({'nan': 0})
 #Need unique groups for each community and timestep
 raw['unique'] = raw['date'].astype(str) +  " " + raw['group'].astype(str)
 
-raw.to_csv("test2.csv")
+#raw.to_csv("test2.csv")
 groups = raw["unique"].unique().tolist()
 
 #Create hypergraph - each member of a group gets a connection to each other member
@@ -69,7 +73,8 @@ for x in groups:
 
 df = df.groupby(["source", "target"]).size().reset_index(name="freq")
 
-df.to_csv("test3.csv")
+#raw.to_csv("test3.csv")
+
 
 raw['rt_count'] = raw['number_of_retweets']
 raw['original_screen_name'] = raw['influencers']
@@ -82,8 +87,8 @@ G=nx.from_pandas_edgelist(df, 'source', 'target',edge_attr='freq')
 #GU=nx.from_pandas_edgelist(df, 'source', 'target')
 
 # Filter graph
-G = fn.filter_for_k_core(G, k_cores=2)
-G = fn.filter_for_largest_components(G, num_comp=100)
+G = fn.filter_for_k_core(G, k_cores=5)
+G = fn.filter_for_largest_components(G, num_comp=20)
 
 # Communities and centralities
 partition = community.best_partition(G)
@@ -94,7 +99,8 @@ nodes = fn.getNodes(G, dc, partition, raw)
 
 # Write to master df
 #fn.buildCommunityData(nodes, topGroups, df)
-
+#raw = fn.cleanRawData(raw)
+NLP.NLP(nodes, raw)
 
 # Write edgelist to dataframe
 edges = G.edges()

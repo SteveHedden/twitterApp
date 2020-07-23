@@ -129,9 +129,9 @@ def getTweetID(x, df):
         # period of time with no RTs. So they are eithe bots or suck at twitter.
         if len(tweets) > 1:
             # print(tweets['original_screen_name'])
-            return str(tweets.iloc[0]['text'])
+            return str(tweets.iloc[0]['id_str'])
         if len(tweets) == 1:
-            return str(tweets['text'])
+            return str(tweets['id_str'])
     else:
         # This means that this person was retweeted during this interval. We want the
         # max value of RTs looking at all their instances.
@@ -139,8 +139,8 @@ def getTweetID(x, df):
         # First get rid of all original tweets since that doesn't give us any information
         tweets = tweets.loc[tweets['rt_count'] > 0]
         max = tweets['rt_count'].max()
-        id = str(tweets.loc[tweets['rt_count'] == max]['id_str'].values[0])
-        return id
+        id = tweets.loc[tweets['rt_count'] == max]['id_str'].values[0]
+        return str(id)
 
 def getText1(x, df):
     tweets = df.loc[df['original_screen_name'] == x]
@@ -215,6 +215,7 @@ def getNodes(G, dc, partition, df):
     # Get tweet id and assign to node
     nodes['tweet_id'] = nodes['node'].apply(lambda x: fn.getTweetID(x, df))
     nodes["tweet_id"] = nodes["tweet_id"].fillna(0)
+    #nodes["tweet_id"] = nodes["tweet_id"].astype(str)
 
     # Rename and reorder to play nice with main.js (necessisary?)
     nodes.columns = ['id', 'name', 'degree', 'group', 'tweet_text', 'tweet_id']
